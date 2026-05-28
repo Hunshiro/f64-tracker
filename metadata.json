@@ -1,0 +1,6 @@
+{
+  "name": "F64 Academy Mock Tracker",
+  "description": "Production-grade mock exam analytics dashboard tracking performance, analytics, leaderboards, comparisons, and smart recommendations.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
