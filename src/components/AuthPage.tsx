@@ -187,22 +187,7 @@ export default function AuthPage({ onAuthSuccess, apiCall }: AuthPageProps) {
     setUploadStatus({ type: '', message: '' });
   };
 
-  // Demo user preset credentials for fast preview onboarding
-  const handleQuickDemo = async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const data = await apiCall('/api/auth/login', {
-        email: 'prabhanshut67@gmail.com',
-        password: 'f64academy'
-      });
-      onAuthSuccess(data.token, data.user);
-    } catch (err: any) {
-      setError(err.message || 'Demo onboarding failed.');
-    } finally {
-      setLoading(false);
-    }
-  };
+
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-slate-50 px-4 py-8 relative overflow-hidden font-sans">
@@ -526,27 +511,6 @@ export default function AuthPage({ onAuthSuccess, apiCall }: AuthPageProps) {
             )}
           </AnimatePresence>
         </form>
-
-        <div className="relative flex py-3 items-center mt-5">
-          <div className="flex-grow border-t border-slate-100"></div>
-          <span className="flex-shrink mx-3 text-slate-400 text-[10px] uppercase font-mono tracking-widest font-semibold">Quick Sandbox Presets</span>
-          <div className="flex-grow border-t border-slate-100"></div>
-        </div>
-
-        {/* Demo Fast Access Option */}
-        <button
-          id="btn-onboard-demo"
-          onClick={handleQuickDemo}
-          disabled={loading || imageUploading}
-          className="w-full py-2.5 bg-slate-50 hover:bg-slate-100 text-blue-600 border border-blue-200 rounded-xl text-xs font-semibold tracking-wide hover:border-blue-300 transition active:scale-98 cursor-pointer"
-        >
-          Explore instantly with dynamic Demo credentials
-        </button>
-
-        <p className="text-center text-[10px] text-slate-400 mt-4 font-mono">
-          On-track preset profile: prabhanshut67@gmail.com / f64academy
-        </p>
-
       </div>
     </div>
   );

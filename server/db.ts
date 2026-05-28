@@ -14,15 +14,7 @@ interface DatabaseSchema {
   streaks: Record<string, { count: number; lastActive: string }>;
 }
 
-const DEFAULT_LEADERBOARD: Omit<LeaderboardUser, 'isCurrentUser'>[] = [
-  { rank: 1, userId: 'u1', name: 'Aniket Sharma', avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop', totalMocks: 45, avgScore: 165.4, avgPercentile: 99.2, accuracy: 88.5, dailyStreak: 45, achievementBadge: '🏆 Rank-1 Legend' },
-  { rank: 2, userId: 'u2', name: 'Priya Patel', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop', totalMocks: 38, avgScore: 158.2, avgPercentile: 98.4, accuracy: 86.2, dailyStreak: 21, achievementBadge: '⚡ Reasoning Beast' },
-  { rank: 3, userId: 'u3', name: 'Vikram Singh', avatar: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100&h=100&fit=crop', totalMocks: 52, avgScore: 151.7, avgPercentile: 97.1, accuracy: 84.8, dailyStreak: 12, achievementBadge: '🔥 Quant Master' },
-  { rank: 4, userId: 'u4', name: 'Sneha Gupta', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&h=100&fit=crop', totalMocks: 29, avgScore: 148.9, avgPercentile: 96.5, accuracy: 85.1, dailyStreak: 8, achievementBadge: '✍️ English Pro' },
-  { rank: 5, userId: 'u5', name: 'Amit Verma', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop', totalMocks: 41, avgScore: 142.3, avgPercentile: 94.8, accuracy: 81.3, dailyStreak: 15, achievementBadge: '🎯 Consistent Performer' },
-  { rank: 6, userId: 'u6', name: 'Neha Reddy', avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100&h=100&fit=crop', totalMocks: 33, avgScore: 139.5, avgPercentile: 93.9, accuracy: 82.7, dailyStreak: 3, achievementBadge: '🧠 GK Specialist' },
-  { rank: 7, userId: 'u7', name: 'Rajesh Kumar', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop', totalMocks: 24, avgScore: 131.2, avgPercentile: 91.1, accuracy: 79.8, dailyStreak: 0 },
-];
+const DEFAULT_LEADERBOARD: Omit<LeaderboardUser, 'isCurrentUser'>[] = [];
 
 const INITIAL_MOCKS = (userId: string): MockAttempt[] => [
   {
@@ -344,7 +336,7 @@ class Database {
         lastActive: new Date().toISOString(),
       };
 
-      this.data.mockAttempts = INITIAL_MOCKS(demoId);
+      this.data.mockAttempts = [];
       this.recalculateLeaderboardLocal();
       this.data.streaks[demoId] = { count: 5, lastActive: new Date().toISOString() };
       this.saveLocal();
@@ -373,6 +365,24 @@ class Database {
       }
     } else {
       console.log('No valid MONGODB_URI provided (must start with "mongodb://" or "mongodb+srv://"). Defaulting to local JSON file database.');
+    }
+
+    // 3. Purge existing pre-seeded dummy mocks from both local DB and MongoDB
+    console.log('Running real-time migration: Purging any residual dummy mock entries...');
+    this.data.mockAttempts = this.data.mockAttempts.filter(m => !['m1', 'm2', 'm3', 'm4'].includes(m.id));
+    this.recalculateLeaderboardLocal();
+    this.saveLocal();
+
+    if (this.useMongo && this.mongoDb) {
+      try {
+        const mocksColl = this.mongoDb.collection('mockAttempts');
+        const deleteRes = await mocksColl.deleteMany({ id: { $in: ['m1', 'm2', 'm3', 'm4'] } });
+        if (deleteRes.deletedCount > 0) {
+          console.log(`Migration: Purged ${deleteRes.deletedCount} pre-seeded dummy mock records from MongoDB.`);
+        }
+      } catch (err) {
+        console.error('Failed to run migration hook to purge MongoDB dummy mocks:', err);
+      }
     }
   }
 
@@ -403,9 +413,6 @@ class Database {
         };
 
         await usersColl.insertOne(demoUser);
-
-        const initialMockRuns = INITIAL_MOCKS(demoId);
-        await mocksColl.insertMany(initialMockRuns);
 
         const initialStreak = { userId: demoId, count: 5, lastActive: new Date().toISOString() };
         await streaksColl.insertOne(initialStreak);
@@ -447,18 +454,14 @@ class Database {
       lastActive: new Date().toISOString(),
     };
 
-    const startMocks = INITIAL_MOCKS(userId);
-
     if (this.useMongo && this.mongoDb) {
       await this.mongoDb.collection('users').insertOne(user);
-      await this.mongoDb.collection('mockAttempts').insertMany(startMocks);
       await this.mongoDb.collection('streaks').insertOne({ userId, count: 1, lastActive: new Date().toISOString() });
       return user;
     }
 
     this.data.users[userId] = user;
     this.data.streaks[userId] = { count: 1, lastActive: new Date().toISOString() };
-    this.data.mockAttempts.push(...startMocks);
     this.recalculateLeaderboardLocal();
     this.saveLocal();
     return user;
@@ -670,10 +673,7 @@ class Database {
       };
     });
 
-    const allRegisteredIds = new Set(Object.keys(this.data.users));
-    const competitors = DEFAULT_LEADERBOARD.filter(comp => !allRegisteredIds.has(comp.userId));
-
-    const sortedArena = [...usersInLeaderboard, ...competitors]
+    const sortedArena = usersInLeaderboard
       .sort((a,b) => b.avgScore - a.avgScore)
       .map((item, idx) => ({
         rank: idx + 1,
@@ -739,9 +739,7 @@ class Database {
       });
 
       const allRegisteredIds = new Set(allUsers.map(u => u.id));
-      const competitors = DEFAULT_LEADERBOARD.filter(comp => !allRegisteredIds.has(comp.userId));
-
-      const sortedArena = [...usersInLeaderboard, ...competitors]
+      const sortedArena = usersInLeaderboard
         .sort((a, b) => b.avgScore - a.avgScore)
         .map((item, idx) => ({
           rank: idx + 1,
@@ -758,7 +756,7 @@ class Database {
       return sortedArena;
     } catch (err) {
       console.error('Failed to compute competitive leaderboards on MongoDB:', err);
-      return DEFAULT_LEADERBOARD.map((item, idx) => ({ ...item, rank: idx + 1 }));
+      return [];
     }
   }
 

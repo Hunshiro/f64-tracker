@@ -1,0 +1,37 @@
+{
+  "users": {
+    "u_demo": {
+      "id": "u_demo",
+      "email": "prabhanshut67@gmail.com",
+      "name": "Prabhanshu",
+      "avatar": "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100&h=100&fit=crop",
+      "passwordHash": "$2b$10$D7qq8fsR/3Z1Ne6KRxtQJeGp7.Vk/MehnabO5cB88MuDIcKtHHvge",
+      "targetExam": "SSC CGL",
+      "primaryPlatform": "F64 Academy",
+      "dailyStudyGoal": 6,
+      "streakCount": 5,
+      "lastActive": "2026-05-28T09:42:53.601Z",
+      "currentRank": 1
+    }
+  },
+  "mockAttempts": [],
+  "leaderboards": [
+    {
+      "rank": 1,
+      "userId": "u_demo",
+      "name": "Prabhanshu",
+      "avatar": "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100&h=100&fit=crop",
+      "totalMocks": 0,
+      "avgScore": 0,
+      "avgPercentile": 0,
+      "accuracy": 0,
+      "dailyStreak": 5
+    }
+  ],
+  "streaks": {
+    "u_demo": {
+      "count": 5,
+      "lastActive": "2026-05-28T09:42:53.603Z"
+    }
+  }
+}
