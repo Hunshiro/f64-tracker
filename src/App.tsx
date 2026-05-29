@@ -29,6 +29,7 @@ import StudyTrackerView from './components/StudyTrackerView';
 import PlatformComparisonView from './components/PlatformComparisonView';
 import ProfileView from './components/ProfileView';
 import MockFormModal from './components/MockFormModal';
+import LandingPage from './components/LandingPage';
 
 interface NotificationToast {
   id: string;
@@ -46,6 +47,9 @@ export default function App() {
   
   // Tab selector state
   const [activeTab, setActiveTab] = useState<'dashboard' | 'history' | 'analytics' | 'leaderboard' | 'weak-topics' | 'study-tracker' | 'comparison' | 'profile'>('dashboard');
+  
+  // Landing/auth control flow for anonymous visitors
+  const [landingAuthMode, setLandingAuthMode] = useState<'login' | 'register' | null>(null);
   
   // Header search and alerts system
   const [searchQuery, setSearchQuery] = useState('');
@@ -207,9 +211,22 @@ export default function App() {
   };
 
   if (!token) {
+    if (landingAuthMode === null) {
+      return (
+        <LandingPage 
+          onStartAuth={(mode) => setLandingAuthMode(mode)} 
+          onExploreDemo={() => setLandingAuthMode('login')} 
+        />
+      );
+    }
     return (
       <AuthPage 
-        onAuthSuccess={handleAuthSuccess} 
+        onAuthSuccess={(newToken, authedUser) => {
+          setLandingAuthMode(null);
+          handleAuthSuccess(newToken, authedUser);
+        }} 
+        initialIsLogin={landingAuthMode === 'login'}
+        onBackToLanding={() => setLandingAuthMode(null)}
         apiCall={async (url, form) => {
           if (url === '/api/auth/login') return api.login(form);
           if (url === '/api/upload') return api.uploadImage(form.image);

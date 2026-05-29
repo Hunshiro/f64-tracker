@@ -6,6 +6,8 @@ import { PlatformName, ExamType } from '../types';
 interface AuthPageProps {
   onAuthSuccess: (token: string, user: any) => void;
   apiCall: (endpoint: string, form: any) => Promise<any>;
+  initialIsLogin?: boolean;
+  onBackToLanding?: () => void;
 }
 
 const PRESET_AVATARS = [
@@ -17,8 +19,8 @@ const PRESET_AVATARS = [
   { id: '6', url: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Sparky', label: 'Adventurer Amber' },
 ];
 
-export default function AuthPage({ onAuthSuccess, apiCall }: AuthPageProps) {
-  const [isLogin, setIsLogin] = useState(true);
+export default function AuthPage({ onAuthSuccess, apiCall, initialIsLogin = true, onBackToLanding }: AuthPageProps) {
+  const [isLogin, setIsLogin] = useState(initialIsLogin);
   
   // Step 1: Credentials
   const [email, setEmail] = useState('');
@@ -187,7 +189,22 @@ export default function AuthPage({ onAuthSuccess, apiCall }: AuthPageProps) {
     setUploadStatus({ type: '', message: '' });
   };
 
-
+  // Demo user preset credentials for fast preview onboarding
+  const handleQuickDemo = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const data = await apiCall('/api/auth/login', {
+        email: 'prabhanshut67@gmail.com',
+        password: 'f64academy'
+      });
+      onAuthSuccess(data.token, data.user);
+    } catch (err: any) {
+      setError(err.message || 'Demo onboarding failed.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-slate-50 px-4 py-8 relative overflow-hidden font-sans">
@@ -199,6 +216,16 @@ export default function AuthPage({ onAuthSuccess, apiCall }: AuthPageProps) {
       {/* Auth Card container */}
       <div className="w-full max-w-lg bg-white rounded-3xl p-8 shadow-xl relative z-10 border border-slate-200 font-sans">
         
+        {onBackToLanding && (
+          <button
+            id="auth-back-to-landing"
+            onClick={onBackToLanding}
+            className="absolute top-6 left-6 flex items-center gap-1 text-[11px] font-bold text-slate-405 text-slate-400 hover:text-blue-600 transition cursor-pointer"
+          >
+            <ArrowLeft size={12} /> Back to Home
+          </button>
+        )}
+
         {/* Upper Brand Branding */}
         <div className="text-center mb-6">
           <div className="mx-auto w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center font-display font-extrabold text-white text-xl shadow-md mb-3 animate-bounce">
@@ -511,6 +538,31 @@ export default function AuthPage({ onAuthSuccess, apiCall }: AuthPageProps) {
             )}
           </AnimatePresence>
         </form>
+
+        {isLogin && (
+          <>
+            <div className="relative flex py-3 items-center mt-5">
+              <div className="flex-grow border-t border-slate-100"></div>
+              <span className="flex-shrink mx-3 text-slate-400 text-[10px] uppercase font-mono tracking-widest font-semibold">Quick Sandbox Presets</span>
+              <div className="flex-grow border-t border-slate-100"></div>
+            </div>
+
+            {/* Demo Fast Access Option */}
+            <button
+              id="btn-onboard-demo"
+              onClick={handleQuickDemo}
+              disabled={loading || imageUploading}
+              className="w-full py-2.5 bg-slate-50 hover:bg-slate-100 text-blue-600 border border-blue-200 rounded-xl text-xs font-semibold tracking-wide hover:border-blue-300 transition active:scale-98 cursor-pointer"
+            >
+              Explore instantly with dynamic Demo credentials
+            </button>
+
+            <p className="text-center text-[10px] text-slate-400 mt-4 font-mono">
+              On-track preset profile: prabhanshut67@gmail.com / f64academy
+            </p>
+          </>
+        )}
+
       </div>
     </div>
   );
